@@ -1,31 +1,49 @@
-# 🤖 Jarvis - Assistente Inteligente para Monitoramento do Sistema
+# Jarvis - Assistente Pessoal de Sistema 🤖
 
-Jarvis é um assistente de sistema pessoal, inspirado no J.A.R.V.I.S do Tony Stark, feito em Python para te ajudar a manter seu computador mais limpo e eficiente. Ele analisa processos ociosos que consomem muita memória RAM e detecta arquivos grandes que ocupam espaço desnecessariamente no seu sistema.
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
+![Status](https://img.shields.io/badge/Status-Em%20Desenvolvimento-green?style=for-the-badge)
 
-## 📦 Funcionalidades
+Um assistente pessoal de sistema, inspirado no J.A.R.V.I.S. de Tony Stark, construído em Python para monitorar e otimizar seu computador de forma autônoma.
 
-- Verifica processos com alto uso de RAM e pouca CPU.
-- Informa os principais processos que podem estar deixando o sistema lento.
-- Escaneia pastas como `Downloads`, `Documents`, `Videos` e `Desktop` em busca de arquivos maiores que 1 GB.
-- Notificação por voz (via `pyttsx3`) para imitar a experiência de um assistente virtual.
-- Totalmente personalizável e modular.
+## ✨ Funcionalidades Principais
 
-## 🧠 Tecnologias Utilizadas
+- **Análise de Processos Ociosos:** Detecta processos que consomem muita memória RAM, mas que estão com baixo uso de CPU.
+- **Detecção de Arquivos Grandes:** Escaneia pastas pré-definidas em busca de arquivos que ocupam espaço desnecessário.
+- **Feedback por Voz:** Comunica suas ações e descobertas usando uma voz sintetizada.
+- **Interface de Linha de Comando (CLI):** Permite executar tarefas específicas através de comandos no terminal.
+- **Agendamento Automático:** Roda em segundo plano, executando as tarefas de verificação em intervalos programados.
+- **Configuração Externa:** Utiliza um arquivo `.env` para facilitar a configuração de pastas e limites sem alterar o código.
+- **Logging Detalhado:** Mantém um registro de todas as atividades no arquivo `Jarvis.log` para depuração e histórico.
 
-- Python 3.10+
-- [psutil](https://pypi.org/project/psutil/) — para análise de processos
-- [pyttsx3](https://pypi.org/project/pyttsx3/) — para conversão de texto em fala
-- Módulos nativos: `os`, `getpass`, `time`
+## 🛠️ Tecnologias Utilizadas
 
-## 🚀 Como Usar
+- **Python 3.10+**
+- **psutil:** Para obter informações do sistema (processos, memória).
+- **pyttsx3:** Para a síntese de voz (Text-to-Speech).
+- **APScheduler:** Para o agendamento de tarefas em segundo plano.
+- **python-dotenv:** Para o gerenciamento de variáveis de ambiente (`.env`).
 
-1. Clone este repositório:
+## 🚀 Instalação e Configuração
 
+Siga os passos abaixo para executar o Jarvis em sua máquina.
+
+**1. Clone o repositório:**
 ```bash
-git clone https://github.com/seu-usuario/jarvis-assistente.git
-cd jarvis-assistente
+git clone [https://github.com/MatheusDorta/Jarvas.git](https://github.com/MatheusDorta/Jarvas.git)
+cd Jarvas
 
- **Instale as dependências:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+# Crie o ambiente
+python -m venv venv
+
+# Ative o ambiente (Windows)
+.\venv\Scripts\activate
+
+# Ative o ambiente (Linux/macOS)
+source venv/bin/activate
+
+
+pip install -r requirements.txt
+
+# Exemplo de configuração no .env
+PASTAS_SCAN_ARQUIVOS="C:\Users\SEU_NOME_DE_USUARIO\Documents,C:\Users\SEU_NOME_DE_USUARIO\Downloads"
+LIMITE_MB_ARQUIVOS="5000"
