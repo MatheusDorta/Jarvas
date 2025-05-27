@@ -1,0 +1,23 @@
+# Arquivo .gitignore para o projeto Jarvis
+
+# 1. Arquivos de configuração do ambiente virtual sensivel
+# Ignora o arquivo que guarda nossas senhas e  configurações 
+.env
+
+# 2. Pasta do ambiente virtual
+# Ignora a pasta do ambiente virtual que contém as dependências do projeto
+venv/
+*/venv/
+
+# 3. Cache  e Arquivos Compilados do Python
+__pycache__/
+*.py[cod]
+
+# 4. Arquivos de log
+# Ignora arquivos de log que podem ser gerados durante a execução do projeto
+*.log
+
+# 5. Arquivos de Configuração de Editores de Código
+# Ignora arquivos de configuração específicos de editores de código
+.vscode/
+.idea/

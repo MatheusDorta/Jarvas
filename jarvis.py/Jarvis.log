@@ -1,0 +1,10 @@
+2025-05-27 15:40:23,850 - INFO - Jarvis entrando em modo de agendamento. Pressione Ctrl+C para sair.
+2025-05-27 15:40:23,893 - INFO - Imported existing <module 'comtypes.gen' from 'C:\\Users\\ESSENCIAL1\\Downloads\\trilha-python-dio\\Manipulação de Arquivos - Ambiente Virtual\\.env\\Lib\\site-packages\\comtypes\\gen\\__init__.py'>
+2025-05-27 15:40:23,893 - INFO - Using writeable comtypes cache directory: 'C:\Users\ESSENCIAL1\Downloads\trilha-python-dio\Manipulação de Arquivos - Ambiente Virtual\.env\Lib\site-packages\comtypes\gen'
+2025-05-27 15:40:27,061 - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-05-27 15:40:27,062 - INFO - Tarefa 'scan_processos' agendada para cada 2 horas.
+2025-05-27 15:40:27,062 - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-05-27 15:40:27,062 - INFO - Tarefa 'scan_arquivos' agendada para cada 8 horas.
+2025-05-27 15:40:27,065 - INFO - Added job "executar_scan_processos" to job store "default"
+2025-05-27 15:40:27,065 - INFO - Added job "executar_scan_arquivos" to job store "default"
+2025-05-27 15:40:27,065 - INFO - Scheduler started
