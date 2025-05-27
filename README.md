@@ -24,3 +24,8 @@ Jarvis é um assistente de sistema pessoal, inspirado no J.A.R.V.I.S do Tony Sta
 ```bash
 git clone https://github.com/seu-usuario/jarvis-assistente.git
 cd jarvis-assistente
+
+ **Instale as dependências:**
+    ```bash
+    pip install -r requirements.txt
+    ```
