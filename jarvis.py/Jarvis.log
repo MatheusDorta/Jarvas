@@ -8,3 +8,6 @@
 2025-05-27 15:40:27,065 - INFO - Added job "executar_scan_processos" to job store "default"
 2025-05-27 15:40:27,065 - INFO - Added job "executar_scan_arquivos" to job store "default"
 2025-05-27 15:40:27,065 - INFO - Scheduler started
+2025-05-29 11:05:19,862 - API - INFO - API: Recebido comando para escanear arquivos grandes.
+2025-05-29 11:05:19,863 - API - INFO - API: Iniciando scan. Pastas: ['C:\\Users\\SEU_USUARIO_AQUI\\Documents', 'C:\\Users\\SEU_USUARIO_AQUI\\Downloads', 'C:\\Users\\SEU_USUARIO_AQUI\\Desktop', 'C:\\Users\\SEU_USUARIO_AQUI\\Videos'], Limite: 5000MB.
+2025-05-29 11:05:19,863 - API - INFO - API: Scan de arquivos não encontrou arquivos grandes.
