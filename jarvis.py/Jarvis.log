@@ -11,3 +11,7 @@
 2025-05-29 11:05:19,862 - API - INFO - API: Recebido comando para escanear arquivos grandes.
 2025-05-29 11:05:19,863 - API - INFO - API: Iniciando scan. Pastas: ['C:\\Users\\SEU_USUARIO_AQUI\\Documents', 'C:\\Users\\SEU_USUARIO_AQUI\\Downloads', 'C:\\Users\\SEU_USUARIO_AQUI\\Desktop', 'C:\\Users\\SEU_USUARIO_AQUI\\Videos'], Limite: 5000MB.
 2025-05-29 11:05:19,863 - API - INFO - API: Scan de arquivos não encontrou arquivos grandes.
+2025-05-29 15:07:07,139 - API - ERROR - API: Erro ao ler o arquivo de log 'Jarvis.log': 'utf-8' codec can't decode byte 0xe7 in position 243: invalid continuation byte
+2025-05-29 15:07:50,529 - API - ERROR - API: Erro ao ler o arquivo de log 'Jarvis.log': 'utf-8' codec can't decode byte 0xe7 in position 243: invalid continuation byte
+2025-05-29 15:29:43,043 - API - INFO - API: Recebido comando para escanear processos.
+2025-05-29 15:29:43,071 - API - INFO - API: Scan de processos encontrou 15 processos.

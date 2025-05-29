@@ -67,7 +67,7 @@ async def get_logs(num_linhas: int = Query(50, description="Número de linhas re
     log_file_name = "Jarvis.log"  # Deve ser o mesmo nome configurado no logging
 
     try:
-        with open(log_file_name, "r", encoding="utf-8") as log_file:
+        with open(log_file_name, "r", encoding="utf-8", errors='replace') as log_file:
             lines = log_file.readlines()
             last_n_lines = lines[-num_linhas:]  # Pega as últimas N linhas
         return {"logs": "".join(last_n_lines)}
