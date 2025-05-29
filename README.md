@@ -65,7 +65,7 @@ PASTAS_SCAN_ARQUIVOS="C:\Users\SEU_NOME_DE_USUARIO\Documents,C:\Users\SEU_NOME_D
 LIMITE_MB_ARQUIVOS="5000"
 ```
 
-##⚙️ Modo de Uso
+## ⚙️ Modo de Uso
 O Jarvis possui diferentes modos de operação:
 
 **1. Servidor da API (Backend)**
