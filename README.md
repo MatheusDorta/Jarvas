@@ -106,6 +106,7 @@ python main.py --agendar
 python main.py --help
 ```
 ## 🗺️ Estrutura do Projeto (Simplificada)
+```
 Jarvis/                 # Pasta raiz do seu projeto
 ├── .env                # Configurações e chaves (NÃO ENVIAR AO GITHUB)
 ├── .env.example        # Exemplo do arquivo .env (ENVIAR AO GITHUB)
@@ -117,6 +118,7 @@ Jarvis/                 # Pasta raiz do seu projeto
 ├── Jarvis.log          # Arquivo de log gerado pelo sistema
 ├── requirements.txt    # Dependências do projeto Python
 └── venv/               # Pasta do ambiente virtual (Ignorada pelo Git)
+```
 
 ## ✍️ Autor
 ## Matheus Dorta
