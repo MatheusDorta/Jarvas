@@ -1,56 +1,116 @@
 # api.py
 
-# --- IMPORTS ---
+# ==============================================================================
+# BLOCO 1: IMPORTS
+# - O que faz: Carrega todas as bibliotecas e módulos externos e locais
+#              necessários para a API funcionar.
+# - Interação/Resultado para o Cliente da API: Nenhuma interação direta, mas
+#                                              este bloco habilita todas as
+#                                              funcionalidades subsequentes.
+# ==============================================================================
 # Bibliotecas Padrão
 import os
 import logging
 
 # Bibliotecas de Terceiros
 from fastapi import FastAPI, Query, HTTPException
-import psutil
-from dotenv import load_dotenv
+from pydantic import BaseModel, Field # Para validação de dados de entrada
+import psutil                        # Para obter informações do sistema
+from dotenv import load_dotenv      # Para carregar variáveis de ambiente
 
-# Módulos Locais
+# Módulos Locais do Projeto
 from scanner import processos_que_usam_muita_ram, encontrar_arquivos_grandes
 
-# --- CONFIGURAÇÃO INICIAL ---
-# Carrega variáveis de ambiente do arquivo .env (essencial para Uvicorn)
+# ==============================================================================
+# BLOCO 2: CONFIGURAÇÃO INICIAL
+# - O que faz: Executa tarefas de configuração que precisam acontecer uma vez
+#              quando a API é iniciada.
+# - Interação/Resultado para o Cliente da API:
+#   - `load_dotenv()`: Permite que a API use configurações do arquivo .env.
+#   - `logging.basicConfig()`: Define como os logs da API serão formatados e
+#                              armazenados (em "Jarvis.log" e no console).
+#   - `app = FastAPI(...)`: Cria a instância principal da aplicação FastAPI,
+#                          que é o coração da nossa API.
+# ==============================================================================
+# Carrega variáveis de ambiente do arquivo .env (ex: PASTAS_SCAN_ARQUIVOS)
 load_dotenv()
 
-# Configuração do sistema de logging para a API
+# Configuração do sistema de logging específico para esta API
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - API - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("Jarvis.log", encoding='utf-8'), # Nome do arquivo de log
-        logging.StreamHandler()
+        logging.FileHandler("Jarvis.log", encoding='utf-8'), # Garante salvar em UTF-8
+        logging.StreamHandler()                               # Também mostra no console
     ]
 )
 
-# Cria a instância principal do aplicativo FastAPI
+# Cria a instância principal do aplicativo FastAPI com título, descrição e versão
 app = FastAPI(
     title="Jarvis API",
     description="API para o Assistente Pessoal Jarvis",
     version="1.0.0"
 )
 
-# --- ENDPOINTS DA API ---
+# ==============================================================================
+# BLOCO 3: MODELOS PYDANTIC (Definição dos Dados de Entrada)
+# - O que faz: Define a estrutura e as regras de validação para os dados que
+#              a API espera receber no corpo (body) das requisições POST.
+# - Interação/Resultado para o Cliente da API:
+#   - Se o cliente enviar dados que não correspondem a estes modelos para os
+#     endpoints de scan, o FastAPI automaticamente retornará um erro HTTP 422
+#     (Unprocessable Entity) com detalhes da validação.
+# ==============================================================================
+class ProcessScanRequest(BaseModel):
+    """Corpo da requisição para disparar um scan de processos."""
+    limite_mb: int = Field(default=300, ge=50, description="Limite em MB para um processo ser considerado 'alto consumidor'. Padrão: 300MB.")
 
+class FileScanRequest(BaseModel):
+    """Corpo da requisição para disparar um scan de arquivos."""
+    limite_mb: int = Field(default=5000, ge=100, description="Limite em MB para um arquivo ser considerado 'grande'. Padrão: 5000MB.")
+
+# ==============================================================================
+# BLOCO 4: ENDPOINTS DA API (As "portas de entrada" da API)
+# - O que faz: Define os diferentes "endereços" (URLs) que podem ser acessados
+#              na API e as funções Python que são executadas quando esses
+#              endereços são chamados pelos métodos HTTP corretos (GET, POST).
+# - Interação/Resultado para o Cliente da API: Estes são os pontos de contato
+#                                              diretos. O cliente faz uma
+#                                              requisição para uma dessas URLs e
+#                                              recebe uma resposta em JSON.
+# ==============================================================================
+
+# --- Endpoint 4.1: Raiz ("/") ---
 @app.get("/")
 async def read_root():
-    """Endpoint raiz da API. Retorna uma mensagem de boas-vindas."""
+    """
+    Ponto de entrada principal, retorna uma mensagem de boas-vindas.
+    
+    Interação/Resultado para o Cliente:
+    - Cliente acessa a URL base da API (ex: http://127.0.0.1:8000/)
+    - Recebe: {"Mensagem": "Bem vindo..."}
+    """
+    logging.info("API: Endpoint raiz '/' acessado.")
     return {"Mensagem": "Bem vindo a API do Jarvis, seu assistente virtual esta online!"}
 
+# --- Endpoint 4.2: Status do Sistema ("/status") ---
 @app.get("/status")
 async def get_system_status():
-    """Retorna o status atual do sistema (CPU, RAM, Disco)."""
-    cpu_usage = psutil.cpu_percent(interval=1)      # Uso da CPU em %
-    ram_usage = psutil.virtual_memory().percent     # Uso da RAM em %
-    disk_usage_percent = "N/A"                      # Valor padrão caso haja erro
+    """
+    Coleta e retorna dados de uso de CPU, RAM e Disco do servidor.
+    
+    Interação/Resultado para o Cliente:
+    - Cliente acessa '/status'
+    - Recebe um JSON com {"cpu_usage_percent": X, "ram_usage_percent": Y, ...}
+    """
+    logging.info("API: Endpoint '/status' acessado.")
+    cpu_usage = psutil.cpu_percent(interval=1)
+    ram_usage = psutil.virtual_memory().percent
+    disk_usage_percent = "N/A" # Valor padrão
 
     try:
         disk_info = psutil.disk_usage('/')
-        disk_usage_percent = disk_info.percent      # Uso do disco principal em %
+        disk_usage_percent = disk_info.percent
     except Exception as e:
         logging.error(f"API: Erro ao obter uso do disco: {str(e)}")
         disk_usage_percent = f"Erro ao obter uso do disco: {str(e)}"
@@ -61,29 +121,46 @@ async def get_system_status():
         "disk_usage_percent": disk_usage_percent,
     }
 
+# --- Endpoint 4.3: Visualização de Logs ("/logs") ---
 @app.get("/logs")
 async def get_logs(num_linhas: int = Query(50, description="Número de linhas recentes do log para retornar", ge=1, le=1000)):
-    """Retorna as últimas N linhas do arquivo de log do Jarvis."""
-    log_file_name = "Jarvis.log"  # Deve ser o mesmo nome configurado no logging
+    """
+    Lê as últimas N linhas do arquivo 'Jarvis.log'.
+    Aceita um parâmetro 'num_linhas' na URL.
+    
+    Interação/Resultado para o Cliente:
+    - Cliente acessa '/logs?num_linhas=X'
+    - Recebe um JSON com {"logs": "conteúdo_do_log..."} ou erro.
+    """
+    logging.info(f"API: Endpoint '/logs' acessado, requisitando {num_linhas} linhas.")
+    log_file_name = "Jarvis.log"
 
     try:
         with open(log_file_name, "r", encoding="utf-8", errors='replace') as log_file:
             lines = log_file.readlines()
-            last_n_lines = lines[-num_linhas:]  # Pega as últimas N linhas
+            last_n_lines = lines[-num_linhas:]
         return {"logs": "".join(last_n_lines)}
     except FileNotFoundError:
-        logging.warning(f"API: Arquivo de log '{log_file_name}' não encontrado ao tentar ler.")
+        logging.warning(f"API: Arquivo de log '{log_file_name}' não encontrado.")
         raise HTTPException(status_code=404, detail=f"Arquivo de log '{log_file_name}' não encontrado.")
     except Exception as e:
         logging.error(f"API: Erro ao ler o arquivo de log '{log_file_name}': {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro ao ler o arquivo de log: {str(e)}")
 
+# --- Endpoint 4.4: Scan de Processos ("/scan/processos") ---
 @app.post("/scan/processos")
-async def trigger_process_scan():
-    """Dispara a verificação de processos e retorna os resultados."""
-    logging.info("API: Recebido comando para escanear processos.")
+async def trigger_process_scan(request_data: ProcessScanRequest):
+    """
+    Recebe um limite de MB, dispara o scan de processos e retorna os resultados.
+    
+    Interação/Resultado para o Cliente:
+    - Cliente envia POST para '/scan/processos' com JSON: {"limite_mb": X}.
+    - Recebe JSON com status e lista de processos.
+    """
+    limite_informado = request_data.limite_mb
+    logging.info(f"API: Recebido comando para escanear processos. Limite: {limite_informado}MB.")
     try:
-        processos_encontrados = processos_que_usam_muita_ram(limite_mb=300)
+        processos_encontrados = processos_que_usam_muita_ram(limite_mb=limite_informado)
 
         if processos_encontrados:
             logging.info(f"API: Scan de processos encontrou {len(processos_encontrados)} processos.")
@@ -106,26 +183,61 @@ async def trigger_process_scan():
         logging.error(f"API: Erro durante o scan de processos: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno ao escanear processos: {str(e)}")
 
+# --- Endpoint 4.5: Scan de Arquivos ("/scan/arquivos") ---
 @app.post("/scan/arquivos")
-async def trigger_file_scan():
-    """Dispara a verificação de arquivos grandes e retorna os resultados."""
-    logging.info("API: Recebido comando para escanear arquivos grandes.")
+async def trigger_file_scan(request_data: FileScanRequest):
+    """
+    Recebe um limite de MB, dispara o scan de arquivos (pastas do .env, ~HOME~ expandido)
+    e retorna os arquivos encontrados.
+    
+    Interação/Resultado para o Cliente:
+    - Cliente envia POST para '/scan/arquivos' com JSON: {"limite_mb": Y}.
+    - Recebe JSON com status e lista de arquivos.
+    """
+    limite_informado = request_data.limite_mb
+    logging.info(f"API: Recebido comando para escanear arquivos grandes. Limite: {limite_informado}MB.")
+    
+    pastas_para_verificar_final = []
+    home_dir = os.path.expanduser("~")
+    
     try:
-        # Lê as configurações do arquivo .env
-        pastas_string = os.getenv("PASTAS_SCAN_ARQUIVOS")
-        # Corrigido para LIMITE_MB_ARQUIVOS para consistência com o .env que definimos
-        limite_mb_string = os.getenv("LIMITE_MB_ARQUIVOS")
+        pastas_config_string = os.getenv("PASTAS_SCAN_ARQUIVOS")
 
-        if not pastas_string or not limite_mb_string:
-            msg_erro = "Variáveis PASTAS_SCAN_ARQUIVOS ou LIMITE_MB_ARQUIVOS não definidas no .env."
-            logging.error(f"API: {msg_erro}")
-            raise HTTPException(status_code=400, detail=msg_erro)
+        if not pastas_config_string:
+            msg_erro_pastas = "Variável PASTAS_SCAN_ARQUIVOS não definida no .env."
+            logging.error(f"API: {msg_erro_pastas}")
+            raise HTTPException(status_code=400, detail=msg_erro_pastas)
 
-        pastas_para_verificar = pastas_string.split(',')
-        limite_mb = int(limite_mb_string) # Converte para inteiro
-
-        logging.info(f"API: Iniciando scan. Pastas: {pastas_para_verificar}, Limite: {limite_mb}MB.")
-        arquivos_encontrados = encontrar_arquivos_grandes(pastas=pastas_para_verificar, limite_mb=limite_mb)
+        pastas_raw = pastas_config_string.split(',')
+        
+        for pasta_template in pastas_raw:
+            pasta_processada = pasta_template.strip()
+            caminho_final_provisorio = ""
+            
+            if pasta_processada.startswith("~HOME~/"):
+                nome_subpasta = pasta_processada.replace("~HOME~/", "")
+                caminho_final_provisorio = os.path.join(home_dir, nome_subpasta)
+            elif pasta_processada.startswith("~HOME~\\"):
+                nome_subpasta = pasta_processada.replace("~HOME~\\", "")
+                caminho_final_provisorio = os.path.join(home_dir, nome_subpasta)
+            else:
+                caminho_final_provisorio = pasta_processada 
+            
+            if os.path.exists(caminho_final_provisorio) and os.path.isdir(caminho_final_provisorio):
+                pastas_para_verificar_final.append(caminho_final_provisorio)
+                # Ajuste no log: Logar a pasta que será usada, não "iniciando scan" aqui.
+                logging.debug(f"API: Pasta adicionada para scan: {caminho_final_provisorio}")
+            else:
+                logging.warning(f"API: Pasta '{caminho_final_provisorio}' (configurada como '{pasta_template.strip()}') não existe ou não é um diretório válido. Ignorando.")
+        
+        if not pastas_para_verificar_final:
+            msg_erro_pastas_validas = "Nenhuma pasta válida encontrada para escanear. Verifique a variável PASTAS_SCAN_ARQUIVOS no .env."
+            logging.error(f"API: {msg_erro_pastas_validas}")
+            raise HTTPException(status_code=400, detail=msg_erro_pastas_validas)
+                
+        # Log de início do scan com as pastas validadas
+        logging.info(f"API: Iniciando scan de arquivos. Pastas válidas: {pastas_para_verificar_final}, Limite: {limite_informado}MB.")
+        arquivos_encontrados = encontrar_arquivos_grandes(pastas=pastas_para_verificar_final, limite_mb=limite_informado)
 
         if arquivos_encontrados:
             logging.info(f"API: Scan de arquivos encontrou {len(arquivos_encontrados)} arquivos grandes.")
@@ -144,15 +256,22 @@ async def trigger_file_scan():
                 "status": "Sucesso",
                 "message": "Nenhum arquivo grande encontrado nas pastas e com o limite especificado."
             }
-    except ValueError: # Erro específico se LIMITE_MB_ARQUIVOS não for um número
-        msg_erro_valor = "LIMITE_MB_ARQUIVOS no .env não é um número válido."
+    except ValueError:
+        msg_erro_valor = "O limite_mb fornecido não é um número válido ou ocorreu um erro de valor ao processar as configurações."
         logging.error(f"API: {msg_erro_valor}")
         raise HTTPException(status_code=400, detail=msg_erro_valor)
     except Exception as e:
         logging.error(f"API: Erro durante o scan de arquivos: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno ao escanear arquivos: {str(e)}")
 
-# --- PONTO DE PARTIDA (Opcional, para rodar com 'python api.py', mas Uvicorn é preferível) ---
+# ==============================================================================
+# BLOCO 7: PONTO DE PARTIDA OPCIONAL PARA DESENVOLVIMENTO
+# - O que faz: Permite rodar a API diretamente com 'python api.py'.
+#              No entanto, para produção ou desenvolvimento mais robusto,
+#              é preferível usar 'uvicorn api:app --reload'.
+# - Interação/Resultado para o Cliente da API: Se executado, inicia o servidor
+#                                              Uvicorn na porta 8000.
+# ==============================================================================
 # if __name__ == "__main__":
 #     import uvicorn
 #     logging.info("Iniciando servidor Uvicorn a partir do api.py (para desenvolvimento)...")
