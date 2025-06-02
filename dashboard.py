@@ -101,22 +101,23 @@ def exibir_logs_api(api_base_url: str):
     )
 
     if st.button("Carregar Logs 🔄", key="load_logs_button_key"):
-        try:
-            response_logs = requests.get(f"{api_base_url}/logs", params={"num_linhas": num_linhas_desejadas})
-            
-            if response_logs.status_code == 200:
-                logs_data = response_logs.json()
-                log_content = logs_data.get("logs", "Nenhum log para exibir ou chave 'logs' não encontrada.")
-                st.text_area("Visualizador de Logs:", value=log_content, height=300, disabled=True, key="log_viewer_area_key")
-                st.success("Logs carregados com sucesso!")
-            elif response_logs.status_code == 404:
-                st.error(f"Falha ao carregar logs: Arquivo 'Jarvis.log' não encontrado no servidor da API.")
-            else:
-                st.error(f"Falha ao carregar logs. Status da API: {response_logs.status_code} - {response_logs.text}")
-        except requests.exceptions.ConnectionError:
-            st.error(f"Não foi possível conectar à API do Jarvis em {api_base_url}/logs. Verifique se o servidor FastAPI está rodando.")
-        except Exception as e:
-            st.error(f"Ocorreu um erro inesperado ao buscar os logs: {e}")
+        with st.spinner("Carregando logs... ⏳"): # Adicionado spinner para feedback
+            try:
+                response_logs = requests.get(f"{api_base_url}/logs", params={"num_linhas": num_linhas_desejadas})
+                
+                if response_logs.status_code == 200:
+                    logs_data = response_logs.json()
+                    log_content = logs_data.get("logs", "Nenhum log para exibir ou chave 'logs' não encontrada.")
+                    st.text_area("Visualizador de Logs:", value=log_content, height=300, disabled=True, key="log_viewer_area_key")
+                    st.success("Logs carregados com sucesso!")
+                elif response_logs.status_code == 404:
+                    st.error(f"Falha ao carregar logs: Arquivo 'Jarvis.log' não encontrado no servidor da API.")
+                else:
+                    st.error(f"Falha ao carregar logs. Status da API: {response_logs.status_code} - {response_logs.text}")
+            except requests.exceptions.ConnectionError:
+                st.error(f"Não foi possível conectar à API do Jarvis em {api_base_url}/logs. Verifique se o servidor FastAPI está rodando.")
+            except Exception as e:
+                st.error(f"Ocorreu um erro inesperado ao buscar os logs: {e}")
     st.markdown("---") # Linha de separação visual
 
 # ==============================================================================
@@ -145,7 +146,7 @@ def exibir_controles_scan(api_base_url: str):
             step=50,
             key="limite_proc_input_key"
         )
-        if st.button("Verificar Processos Agora ⚙️", key="btn_scan_processos_key", use_container_width=True):
+        if st.button("Verificar Processos Agora ⚙️", key="btn_scan_processos_key", use_container_width=True): # Corrigida key para consistência
             with st.spinner("Analisando processos... Por favor, aguarde. 🕵️‍♂️"):
                 try: 
                     payload = {"limite_mb": int(limite_mb_processos)} # Garante que é int
@@ -172,8 +173,7 @@ def exibir_controles_scan(api_base_url: str):
             if st.session_state.resultados_processos_df: # Se a lista não estiver vazia
                 st.write("Processos Encontrados:")
                 df_processos = pd.DataFrame(st.session_state.resultados_processos_df)
-                # Ajuste para garantir que as colunas existam antes de renomear
-                if not df_processos.empty:
+                if not df_processos.empty: # Garante que o DataFrame não está vazio antes de renomear colunas
                     df_processos.columns = ["Nome do Processo", "Memória (MB)", "PID"]
                 st.dataframe(df_processos, use_container_width=True, hide_index=True)
 
@@ -181,17 +181,16 @@ def exibir_controles_scan(api_base_url: str):
     with col_arq:
         st.subheader("Análise de Arquivos Grandes")
         limite_mb_arquivos = st.number_input(
-            "Limite de Tamanho (MB) para Arquivos:", # Label corrigido
+            "Limite de Tamanho (MB) para Arquivos:",
             min_value=100,
             value=5000, # Valor padrão que a API também usa se nada for enviado
             step=100,
             key="limite_arq_input_key"
         )
-        if st.button("Verificar Arquivos Agora 💾", key="btn_scan_arquivos_key", use_container_width=True):
+        if st.button("Verificar Arquivos Agora 💾", key="btn_scan_arquivos_key", use_container_width=True): # Corrigida key para consistência
             with st.spinner("Analisando arquivos... Isso pode levar alguns minutos. ⏳"):
                 try: 
                     payload_arquivos = {"limite_mb": int(limite_mb_arquivos)} # Garante que é int
-                    # CORRIGIDO: Adicionado json=payload_arquivos
                     response_arquivos = requests.post(f"{api_base_url}/scan/arquivos", json=payload_arquivos)
                     
                     if response_arquivos.status_code == 200:
@@ -226,17 +225,76 @@ def exibir_controles_scan(api_base_url: str):
                         "Caminho Completo": arq.get('caminho')
                     })
                 df_arquivos = pd.DataFrame(dados_arquivos_formatados)
-                # Ajuste para garantir que as colunas existam antes de renomear/selecionar
-                if not df_arquivos.empty:
-                    # Se quiser manter as 3 colunas:
-                    # df_arquivos = df_arquivos[["Nome do Arquivo", "Tamanho (MB)", "Caminho Completo"]]
-                    pass # As colunas já são nomeadas corretamente na criação do dicionário
+                if not df_arquivos.empty: # Garante que o DataFrame não está vazio
+                    # As colunas já são nomeadas corretamente na criação do dicionário acima
+                    pass 
                 st.dataframe(df_arquivos, use_container_width=True, hide_index=True)
-
     st.markdown("---")  # Linha de separação visual após a seção de scans
 
 # ==============================================================================
-# BLOCO 6: LAYOUT PRINCIPAL DA APLICAÇÃO STREAMLIT
+# BLOCO 6: FUNÇÃO PARA EXIBIR O STATUS DO AGENDADOR
+# - O que faz: Esta função se conecta ao endpoint '/scheduler/jobs' da API
+#              para buscar informações sobre as tarefas agendadas.
+# - O que você vê no Dashboard: Uma nova seção "⏰ Status do Agendador" com um
+#                               botão. Ao clicar, mostra uma tabela com os jobs.
+# ==============================================================================
+def exibir_status_agendador(api_base_url: str):
+    """Busca e exibe o Status do Agendador de Jobs."""
+    st.header("⏰ Status do Agendador")
+    
+    if st.button("Verificar Jobs Agendados Agora 🔄", key="btn_status_agendador_key"):
+        with st.spinner("Buscando status do agendador... Por favor, aguarde. ⏳"):
+            try:
+                # Ajuste o endpoint se você usou /scheduler/status na sua API
+                response = requests.get(f"{api_base_url}/scheduler/jobs") 
+                
+                if response.status_code == 200:
+                    dados_scheduler = response.json()
+                    
+                    jobs = [] 
+                    mensagem_status = "" # Inicializa a mensagem de status
+                    
+                    if isinstance(dados_scheduler, list):
+                        jobs = dados_scheduler
+                        mensagem_status = f"Status do Agendador carregado. {len(jobs)} job(s) encontrado(s)."
+                    elif isinstance(dados_scheduler, dict):
+                        if "jobs" in dados_scheduler: 
+                            jobs = dados_scheduler.get("jobs", [])
+                            mensagem_status = dados_scheduler.get("message", f"Status do Agendador carregado. {len(jobs)} job(s) encontrado(s).")
+                        elif "message" in dados_scheduler: # Caso a API retorne uma mensagem específica
+                            st.info(dados_scheduler.get("message"))
+                        else:
+                            st.warning("Formato inesperado dos dados do agendador.")
+                    else:
+                        st.warning("Resposta inesperada da API para o status do agendador.")
+                    
+                    if mensagem_status: # Exibe a mensagem de sucesso/info apenas se houver uma
+                        st.success(mensagem_status)
+                    
+                    if jobs: 
+                        dados_para_df = []
+                        for job in jobs:
+                            dados_para_df.append({
+                                "ID do Job": job.get("id"),
+                                "Nome/Referência": job.get("name"),
+                                "Gatilho (Trigger)": job.get("trigger"),
+                                "Próxima Execução": job.get("next_run_time", "N/A")                                
+                            })
+                        df_jobs = pd.DataFrame(dados_para_df)
+                        if not df_jobs.empty: # Garante que o DataFrame não está vazio
+                            st.dataframe(df_jobs, use_container_width=True, hide_index=True)
+                    # Removido o 'elif not jobs:' para evitar duplicidade de mensagens se a API já informou.
+                    
+                else:
+                    st.error(f"Falha ao buscar o status do agendador. Status da API: {response.status_code} - {response.text}")
+            except requests.exceptions.ConnectionError:
+                st.error(f"Não foi possível conectar à API do Jarvis em {api_base_url}/scheduler/jobs. Verifique se o servidor FastAPI está rodando.")
+            except Exception as e:
+                st.error(f"Ocorreu um erro inesperado ao buscar o status do agendador: {e}")
+    st.markdown("---")  # Linha de separação visual após a seção de agendador
+
+# ==============================================================================
+# BLOCO 7: LAYOUT PRINCIPAL DA APLICAÇÃO STREAMLIT
 # - O que faz: Este é o "esqueleto" da nossa página. Ele define o título
 #              principal, o ícone na aba do navegador, a mensagem de
 #              boas-vindas, a barra lateral (sidebar) e organiza onde cada
@@ -244,7 +302,7 @@ def exibir_controles_scan(api_base_url: str):
 # - O que você vê no Dashboard: Toda a estrutura da página: o título, a
 #                               mensagem de boas-vindas, a barra lateral à
 #                               esquerda, e todas as seções (Status API, Status
-#                               Sistema, Logs, Scans) aparecendo no corpo principal.
+#                               Sistema, Logs, Scans, Agendador) aparecendo no corpo principal.
 # ==============================================================================
 
 # Configurações iniciais da página (deve ser o primeiro comando Streamlit, idealmente)
@@ -275,8 +333,9 @@ with st.container():
     exibir_status_sistema(API_URL)
     exibir_logs_api(API_URL)
     exibir_controles_scan(API_URL)
+    exibir_status_agendador(API_URL) # Função para exibir status do agendador
 
 # Seção final com próximos passos ou notas
 st.subheader("🚀 Próximos Passos")
-st.success("Dashboard com inputs para limites e scans de Processos e Arquivos totalmente funcional! ✔️")
-st.info("Podemos agora pensar em: 1. Melhorar a interatividade das tabelas (filtros?). 2. Adicionar controle/visualização do Agendador. 3. Integrar com Telegram para notificações.")
+st.success("Dashboard com visualização do Status do Agendador implementado! ✔️")
+st.info("Podemos agora: 1. Adicionar botões para PAUSAR/RETOMAR jobs do agendador (requer novos endpoints na API). 2. Integrar com Telegram. 3. Melhorar a interatividade das tabelas.")

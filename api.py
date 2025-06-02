@@ -11,6 +11,7 @@
 # Bibliotecas Padrão
 import os
 import logging
+import json # Para manipulação de JSON
 
 # Bibliotecas de Terceiros
 from fastapi import FastAPI, Query, HTTPException
@@ -263,6 +264,36 @@ async def trigger_file_scan(request_data: FileScanRequest):
     except Exception as e:
         logging.error(f"API: Erro durante o scan de arquivos: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erro interno ao escanear arquivos: {str(e)}")
+    
+# --- Endpoint 4.6: Status dos Jobs Agendados ("/jobs/status") ---
+@app.get("/scheduler/jobs")
+async def get_scheduler_status():
+    """
+    Lê e retorna o status dos jobs agendados a partir do arquivo 'scheduler_status.json'.
+    
+    Interação/Resultado para o Cliente da API:
+    - Cliente acessa '/scheduler/jobs'.
+    - Recebe um JSON contendo a lista de jobs e seus detalhes, ou uma mensagem de erro.
+    """
+    
+    nome_arquivo_status = "scheduler_status.json"
+    logging.info(f"API: Endpoint '/scheduler/status' acessado. Lendo status dos jobs agendados do arquivo '{nome_arquivo_status}'.")   
+     
+    try:
+        with open(nome_arquivo_status, "r", encoding="utf-8") as f:
+              jobs_status = json.load(f) # Carrega o conteúdo do arquivo JSON
+        logging.info(f"API: Status dos jobs agendados lido com sucesso. Total de jobs: {len(jobs_status)}.")
+        return jobs_status
+    except FileNotFoundError:
+        logging.warning(f"API: Arquivo de status '{nome_arquivo_status}' não encontrado.")
+        return {"status": "Erro", "message": f"Arquivo de status '{nome_arquivo_status}' não encontrado."}
+    except json.JSONDecodeError:
+        logging.error(f"API: Erro ao decodificar o arquivo JSON '{nome_arquivo_status}'.")
+        raise HTTPException(status_code=500, detail=f"Erro ao decodificar o arquivo JSON: {nome_arquivo_status}. Verifique o formato do arquivo.")
+    except Exception as e:
+        logging.error(f"API: Erro ao ler o arquivo de status '{nome_arquivo_status}': {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao ler o arquivo de status: {str(e)}")
+             
 
 # ==============================================================================
 # BLOCO 7: PONTO DE PARTIDA OPCIONAL PARA DESENVOLVIMENTO

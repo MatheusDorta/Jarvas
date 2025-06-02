@@ -10,11 +10,13 @@ import logging
 import argparse
 import getpass
 import signal
+import json
 
 # Bibliotecas de Terceiros (Instaladas via pip)
 import pyttsx3
 from dotenv import load_dotenv
 from apscheduler.schedulers.blocking import BlockingScheduler
+from datetime import datetime
 
 # Módulos Locais do Projeto
 from scanner import encontrar_arquivos_grandes, processos_que_usam_muita_ram
@@ -44,6 +46,29 @@ except Exception as e:
 
 
 # --- FUNÇÕES PRINCIPAIS ---
+def atualizar_status_jobs_agendados(scheduler, nome_arquivo="scheduler_status.json"):
+    """"Atualiza o status dos jobs agendados em um arquivo JSON."""
+    jobs_status = []
+    try: 
+        for job in scheduler.get_jobs():
+            next_run_time_iso = None
+            if job.next_run_time: 
+                # Formata a data para ser serializavel com Json e mais fácil de ler
+                next_run_time_iso = job.next_run_time.isoformat()
+                
+            jobs_status.append({
+                "id": job.id,
+                "name": job.name, 
+                "trigger": str(job.trigger), # Converte o gatilho para string
+                "next_run_time": next_run_time_iso
+            })  
+            
+        with open(nome_arquivo, "w", encoding="utf-8") as f:
+            json.dump(jobs_status, f, indent=4, ensure_ascii=False)
+        logging.info(f"MAIN: Status dos jobs agendados atualizado em {nome_arquivo}.")
+    except Exception as e:
+        logging.error(f"MAIN: Erro ao atualizar o status dos jobs agendados: {e}")          
+
 def falar(engine, texto):
     """Vocaliza um texto usando o motor de TTS já inicializado."""
     if engine:
@@ -136,6 +161,15 @@ def main():
         # Agenda as tarefas para serem executadas em intervalos definidos
         scheduler.add_job(lambda: executar_scan_processos(TTS_ENGINE), 'interval', hours=2, id='scan_processos')
         scheduler.add_job(lambda: executar_scan_arquivos(TTS_ENGINE), 'interval', hours=8, id='scan_arquivos')
+        
+        # Agenda a atualização do status dos jobs a cada 1 minuto (Ajuste conforme necessário)
+        scheduler.add_job(lambda: atualizar_status_jobs_agendados(scheduler),
+                          'interval', 
+                          minutes=1, 
+                          id='update_scheduler_status',
+                          name='Atualizar do Status do  Agendador'
+                          )
+        logging.info("Tarefa 'update_scheduler_status' agendada para atualizar o status dos jobs a cada 1 minuto.")
         
         logging.info("Tarefas agendadas. O agendador está iniciando.")
         scheduler.start()
